@@ -1,0 +1,12 @@
+name: "Vulnerable Demo (fixture copy)"
+on:
+  workflow_dispatch:
+jobs:
+  run-vulnerable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Call fake-action pinned by TAG
+        uses: geethika-sandireddy/ActionGaurd-demo/fake-action@v1
+      - name: Known-compromised action
+        uses: tj-actions/changed-files@v44

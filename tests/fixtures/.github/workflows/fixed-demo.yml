@@ -1,0 +1,10 @@
+name: "Fixed Demo (fixture copy)"
+on:
+  workflow_dispatch:
+jobs:
+  run-fixed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Call fake-action pinned by SHA
+        uses: geethika-sandireddy/ActionGaurd-demo/fake-action@9a9bab0741f13aae03e511d33dacaff05ac6e165
