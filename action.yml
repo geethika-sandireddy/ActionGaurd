@@ -1,0 +1,41 @@
+name: 'ActionGuard'
+description: >
+  Scans GitHub Actions workflows for actions pinned to mutable tags/branches
+  instead of commit SHAs, and flags actions with a documented supply-chain
+  compromise (starting with tj-actions/changed-files, CVE-2025-30066).
+author: 'geethika-sandireddy'
+branding:
+  icon: 'shield'
+  color: 'red'
+
+inputs:
+  path:
+    description: 'Path to scan, relative to the repo root.'
+    required: false
+    default: '.'
+  fail-on:
+    description: 'Minimum severity that fails this step: INFO, MEDIUM, HIGH, or CRITICAL.'
+    required: false
+    default: 'HIGH'
+  sarif:
+    description: 'If set to a file path, also write a SARIF report there (for github/codeql-action/upload-sarif).'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Run ActionGuard
+      shell: bash
+      run: |
+        export PYTHONPATH="${{ github.action_path }}${PYTHONPATH:+:$PYTHONPATH}"
+        SARIF_FLAG=""
+        if [ -n "${{ inputs.sarif }}" ]; then
+          SARIF_FLAG="--sarif ${{ inputs.sarif }}"
+        fi
+        python -m actionguard.cli "${{ inputs.path }}" --fail-on "${{ inputs.fail-on }}" $SARIF_FLAG
