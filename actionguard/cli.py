@@ -12,10 +12,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from actionguard.scanner import SEVERITY_ORDER, scan_repo, summarize
+from actionguard.reporters import to_markdown_summary, write_sarif
 
 SEVERITY_COLOR = {
     "CRITICAL": "\033[91m",
@@ -48,6 +50,10 @@ def main(argv: list[str] | None = None) -> int:
         "--fail-on", default="HIGH", choices=SEVERITY_ORDER.keys(),
         help="minimum severity that causes a non-zero exit code (default: HIGH)",
     )
+    parser.add_argument(
+        "--sarif", metavar="PATH",
+        help="also write a SARIF report to PATH, for GitHub Code Scanning",
+    )
     args = parser.parse_args(argv)
 
     root = Path(args.path).resolve()
@@ -63,6 +69,17 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2))
     else:
         _print_human(findings, summary)
+
+    if args.sarif:
+        write_sarif(findings, args.sarif)
+        print(f"\nSARIF report written to {args.sarif}")
+
+    # When running inside GitHub Actions, also post a nicely formatted
+    # summary to the run page instead of only the raw log.
+    step_summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if step_summary_path:
+        with open(step_summary_path, "a") as fh:
+            fh.write(to_markdown_summary(findings, summary) + "\n")
 
     threshold = SEVERITY_ORDER[args.fail_on]
     worst = max((SEVERITY_ORDER[f.severity] for f in findings), default=-1)
