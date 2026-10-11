@@ -22,5 +22,16 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -v
 
-      - name: Scan this repo's own workflows (dogfooding)
-        run: python -m actionguard.cli . --fail-on CRITICAL
+      - name: Self-scan using the packaged ActionGuard action (dogfooding)
+        uses: ./
+        with:
+          path: '.'
+          fail-on: 'CRITICAL'
+          sarif: 'actionguard-results.sarif'
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: actionguard-results.sarif
+        continue-on-error: true
