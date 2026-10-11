@@ -1,0 +1,19 @@
+{
+  "_comment": "Actions with a documented supply-chain compromise. Matched on owner/repo regardless of which ref is used, because even a 'pinned' SHA could be one published during the compromise window.",
+  "actions": [
+    {
+      "repo": "tj-actions/changed-files",
+      "incident": "CVE-2025-30066",
+      "date": "2025-03-14",
+      "summary": "Mutable version tags were force-moved to a malicious commit that dumped CI runner memory (including secrets) to workflow logs.",
+      "reference": "https://www.stepsecurity.io/blog/harden-runner-detection-tj-actions-changed-files-action-is-compromised"
+    },
+    {
+      "repo": "reviewdog/action-setup",
+      "incident": "Related to CVE-2025-30066",
+      "date": "2025-03-14",
+      "summary": "Compromised as part of the same campaign that hit tj-actions/changed-files; also had a tag force-moved to malicious code.",
+      "reference": "https://www.stepsecurity.io/blog/harden-runner-detection-tj-actions-changed-files-action-is-compromised"
+    }
+  ]
+}
