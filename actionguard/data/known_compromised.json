@@ -1,11 +1,15 @@
 {
-  "_comment": "Actions with a documented supply-chain compromise. Matched on owner/repo regardless of which ref is used, because even a 'pinned' SHA could be one published during the compromise window.",
+  "_comment": "Actions with a documented supply-chain compromise. Per-entry fields: tags_hijacked (tag/branch refs are CRITICAL), compromised_shas (confirmed malicious commits, CRITICAL even when pinned), safe_shas (vendor-confirmed clean commits, INFO), any_ref_critical (no known-safe ref exists, so every ref is CRITICAL). A pinned SHA that appears in neither list is MEDIUM: verify it predates the incident. Compromised actions have been re-enabled still containing malicious code (actions-cool, Sept 2026), so entries are never removed after a takedown.",
   "actions": [
     {
       "repo": "tj-actions/changed-files",
       "incident": "CVE-2025-30066",
       "date": "2025-03-14",
       "summary": "Mutable version tags were force-moved to a malicious commit that dumped CI runner memory (including secrets) to workflow logs.",
+      "tags_hijacked": true,
+      "compromised_shas": ["0e58ed8671d6b60d0890c21b07f8835ace038e67"],
+      "safe_shas": [],
+      "any_ref_critical": false,
       "reference": "https://www.stepsecurity.io/blog/harden-runner-detection-tj-actions-changed-files-action-is-compromised"
     },
     {
@@ -13,7 +17,91 @@
       "incident": "Related to CVE-2025-30066",
       "date": "2025-03-14",
       "summary": "Compromised as part of the same campaign that hit tj-actions/changed-files; also had a tag force-moved to malicious code.",
+      "tags_hijacked": true,
+      "compromised_shas": [],
+      "safe_shas": [],
+      "any_ref_critical": true,
       "reference": "https://www.stepsecurity.io/blog/harden-runner-detection-tj-actions-changed-files-action-is-compromised"
+    },
+    {
+      "repo": "aquasecurity/trivy-action",
+      "incident": "CVE-2026-33634 (TeamPCP)",
+      "date": "2026-03-19",
+      "summary": "75 of 76 version tags were force-pushed to malicious commits carrying a credential stealer that read Runner.Worker memory. Tags were restored after about 12 hours.",
+      "tags_hijacked": true,
+      "compromised_shas": [
+        "c5967f85626795f647d4bf6eb67227f9b79e02f5",
+        "ddb9da4475c1cef7d5389062bdfdfbdbd1394648"
+      ],
+      "safe_shas": ["57a97c7e7821a5776cebc9bb87c984fa69cba8f1"],
+      "any_ref_critical": false,
+      "reference": "https://snyk.io/articles/trivy-github-actions-supply-chain-compromise/"
+    },
+    {
+      "repo": "aquasecurity/setup-trivy",
+      "incident": "CVE-2026-33634 (TeamPCP)",
+      "date": "2026-03-19",
+      "summary": "All 7 tags (v0.2.0 to v0.2.6) were force-pushed to malicious commits in the same attack as trivy-action. It is also pulled in internally by trivy-action, so SHA-pinning only the outer action did not always protect users.",
+      "tags_hijacked": true,
+      "compromised_shas": ["e6c2c5e321ed9123bda567646e2f96565e34abe1"],
+      "safe_shas": [],
+      "any_ref_critical": false,
+      "reference": "https://snyk.io/articles/trivy-github-actions-supply-chain-compromise/"
+    },
+    {
+      "repo": "Checkmarx/kics-github-action",
+      "incident": "TeamPCP campaign",
+      "date": "2026-03-23",
+      "summary": "All 35 version tags were force-pushed to malicious commits that ran a rogue setup.sh payload. Vendor guidance is to move to v2.1.20 or newer.",
+      "tags_hijacked": true,
+      "compromised_shas": [],
+      "safe_shas": [],
+      "any_ref_critical": false,
+      "reference": "https://phoenix.security/teampcp-supply-chain-attack-trivy-checkmarx-github-actions-npm-canisterworm/"
+    },
+    {
+      "repo": "Checkmarx/ast-github-action",
+      "incident": "TeamPCP campaign",
+      "date": "2026-03-23",
+      "summary": "Version v2.3.28 was confirmed compromised in the same campaign as the KICS action.",
+      "tags_hijacked": true,
+      "compromised_shas": [],
+      "safe_shas": [],
+      "any_ref_critical": false,
+      "reference": "https://phoenix.security/teampcp-supply-chain-attack-trivy-checkmarx-github-actions-npm-canisterworm/"
+    },
+    {
+      "repo": "actions-cool/issues-helper",
+      "incident": "Mini Shai-Hulud campaign",
+      "date": "2026-05-18",
+      "summary": "Every tag was moved to an imposter commit that downloaded Bun, read Runner.Worker memory and sent credentials to an attacker domain. The repository was re-enabled on 2026-09-16 still containing the malicious code and had to be disabled a second time.",
+      "tags_hijacked": true,
+      "compromised_shas": [],
+      "safe_shas": [],
+      "any_ref_critical": true,
+      "reference": "https://thehackernews.com/2026/09/compromised-github-actions-came-back.html"
+    },
+    {
+      "repo": "actions-cool/maintain-one-comment",
+      "incident": "Mini Shai-Hulud campaign",
+      "date": "2026-05-18",
+      "summary": "15 tags were moved to malicious commits with the same payload as issues-helper. Also re-enabled in September 2026 with the malicious code still present.",
+      "tags_hijacked": true,
+      "compromised_shas": [],
+      "safe_shas": [],
+      "any_ref_critical": true,
+      "reference": "https://thehackernews.com/2026/09/compromised-github-actions-came-back.html"
+    },
+    {
+      "repo": "codfish/semantic-release-action",
+      "incident": "Tag hijack, 2026-06-24",
+      "date": "2026-06-24",
+      "summary": "A malicious commit was force-pushed and several version tags were redirected to it, so any workflow running those tags afterwards executed the attacker's payload in the runner.",
+      "tags_hijacked": true,
+      "compromised_shas": [],
+      "safe_shas": [],
+      "any_ref_critical": false,
+      "reference": "https://www.stepsecurity.io/blog/supply-chain-compromise-codfish-semantic-release-action"
     }
   ]
 }
