@@ -1,0 +1,13 @@
+name: "Trivy and friends (fixture)"
+on: workflow_dispatch
+jobs:
+  cases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aquasecurity/trivy-action@0.33.0
+      - uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
+      - uses: aquasecurity/trivy-action@c5967f85626795f647d4bf6eb67227f9b79e02f5
+      - uses: aquasecurity/trivy-action@1111111111111111111111111111111111111111
+      - uses: actions-cool/issues-helper@v3
+      - uses: Checkmarx/kics-github-action@v2.1.0
+      - uses: codfish/semantic-release-action@v2
