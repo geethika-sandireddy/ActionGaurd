@@ -35,7 +35,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Scan workflows for supply-chain risk
-        uses: geethika-sandireddy/ActionGaurd@v1
+        # Pin by commit SHA, not the tag: that is the whole point of this tool.
+        uses: geethika-sandireddy/ActionGaurd@94ac5c6ef9968285c1d88741af61ad4220d9883a # v1.1.0
         with:
           path: '.'
           fail-on: 'HIGH'          # fail the build on HIGH or CRITICAL findings
@@ -94,6 +95,30 @@ Exit code is `1` whenever a finding meets or exceeds `--fail-on` (default
 in this repo dogfoods ActionGuard on itself, using the packaged action
 (`uses: ./`), on every push.
 
+## Incidents covered
+
+The known-compromised list (`actionguard/data/known_compromised.json`) is
+checked on `owner/repo` and is SHA-aware: a tag of a hijacked action is
+CRITICAL, a confirmed-malicious commit is CRITICAL even when pinned, a
+vendor-confirmed safe SHA is INFO, and any other SHA is MEDIUM ("verify it
+predates the incident").
+
+| Date | Action(s) | What happened |
+|---|---|---|
+| 2025-03-14 | `tj-actions/changed-files`, `reviewdog/action-setup` | Tags moved to a commit that dumped runner secrets to logs (CVE-2025-30066) |
+| 2026-03-19 | `aquasecurity/trivy-action`, `aquasecurity/setup-trivy` | 75 of 76 and 7 of 7 tags force-pushed to a credential stealer (CVE-2026-33634) |
+| 2026-03-23 | `Checkmarx/kics-github-action`, `Checkmarx/ast-github-action` | All 35 KICS tags force-pushed; AST v2.3.28 compromised |
+| 2026-05-18 | `actions-cool/issues-helper`, `actions-cool/maintain-one-comment` | Tags moved to imposter commits. Repos were re-enabled in Sept 2026 still malicious |
+| 2026-06-24 | `codfish/semantic-release-action` | Malicious commit force-pushed and tags redirected to it |
+
+**Limits you should know about.** A blocklist is reactive: it only knows
+incidents someone has already documented, so it will always be behind. It
+also does not detect attacks that never touch an action tag, such as
+attackers using stolen maintainer credentials to commit a malicious workflow
+file straight into a repo (the GhostAction campaign). Pinning does not stop
+that. Use it alongside branch protection on `.github/workflows/`, not
+instead of it.
+
 ## How it works
 
 1. Walks `.github/workflows/*.yml` and reads every `uses:` line (regex-based,
@@ -128,4 +153,4 @@ This repo is the **scanner** piece only. The companion pieces are:
 
 ✅ Scanner, CLI, known-compromised list, SARIF + job-summary output, a
 packaged reusable GitHub Action, and self-scanning CI are all in place and
-passing. Tagged `v1` — usable today via `uses: geethika-sandireddy/ActionGaurd@v1`.
+passing. Latest release `v1.1.0` (refreshed incident list through Oct 2026). Pin it by commit SHA, as shown above.
