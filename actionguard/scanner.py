@@ -75,6 +75,47 @@ def _parse_ref(raw: str) -> tuple[str, str] | None:
     return owner_repo, ref
 
 
+def _classify_known_bad(owner_repo: str, ref: str, incident: dict) -> tuple[str, str, str]:
+    """Decide status/severity for a reference to an action with a documented
+    compromise. Returns (status, severity, message).
+
+    Order matters: a confirmed-malicious SHA is critical even though it is
+    "pinned"; a vendor-confirmed safe SHA is fine; a tag/branch of a repo whose
+    tags were hijacked is critical because the same thing can happen again
+    (and has: compromised repos have been re-enabled still holding malicious
+    code); any other SHA needs a human to verify it predates the incident.
+    """
+    what = f"{incident['incident']}, {incident['date']}"
+    is_sha = bool(_SHA_RE.match(ref))
+    ref_lc = ref.lower()
+
+    if is_sha and ref_lc in {s.lower() for s in incident.get("compromised_shas", [])}:
+        return ("PINNED", "CRITICAL",
+                f"{owner_repo} is pinned to a commit that is a confirmed malicious "
+                f"commit from a known compromise ({what}). Remove it and rotate any "
+                f"secrets that workflow could access.")
+
+    if incident.get("any_ref_critical"):
+        return ("PINNED" if is_sha else "UNPINNED", "CRITICAL",
+                f"{owner_repo} was compromised ({what}) and no known-safe reference "
+                f"exists. Stop using it and replace it with an alternative.")
+
+    if is_sha and ref_lc in {s.lower() for s in incident.get("safe_shas", [])}:
+        return ("PINNED", "INFO",
+                f"{owner_repo} is pinned to a commit the vendor lists as safe, "
+                f"after a past compromise ({what}). Good.")
+
+    if is_sha:
+        return ("PINNED", "MEDIUM",
+                f"{owner_repo} was compromised ({what}). This SHA is not on the "
+                f"known-bad or known-safe list: verify it predates the incident or "
+                f"matches the vendor's advisory.")
+
+    return ("UNPINNED", "CRITICAL",
+            f"{owner_repo}@{ref} uses a tag/branch of an action whose tags were "
+            f"hijacked ({what}). Pin to a verified commit SHA.")
+
+
 def find_workflow_files(root: Path) -> list[Path]:
     workflows_dir = root / ".github" / "workflows"
     if not workflows_dir.is_dir():
@@ -100,19 +141,16 @@ def scan_file(path: Path, known_bad: dict[str, dict]) -> list[Finding]:
 
         incident = known_bad.get(owner_repo.lower())
         if incident:
+            status, severity, message = _classify_known_bad(owner_repo, ref, incident)
             findings.append(Finding(
                 file=str(path),
                 line=lineno,
                 raw_ref=raw_ref,
                 owner_repo=owner_repo,
                 ref=ref,
-                status="UNPINNED" if not _SHA_RE.match(ref) else "PINNED",
-                severity="CRITICAL",
-                message=(
-                    f"{owner_repo} has a documented supply-chain compromise "
-                    f"({incident['incident']}, {incident['date']}). Avoid using "
-                    f"it, or pin to a commit SHA you have personally audited."
-                ),
+                status=status,
+                severity=severity,
+                message=message,
                 incident=incident,
             ))
             continue
